@@ -1,0 +1,10 @@
+venv
+*.pyc
+.DS_Store
+.env
+env
+old_app_versions
+results
+data/value_counts
+data
+assets
