@@ -6,6 +6,7 @@ Created on Fri Jun 24 14:08:25 2022
 @author: jonwinkelman
 
 """
+from jw_utils import file_utils as fu
 path_to_fasta = '/Users/jonwinkelman/my_dash_app/data/Proteomes/GCF_009939195.1.faa'
 
 def get_seq_dict(path_to_fasta):
@@ -50,9 +51,31 @@ def get_protein_subset(path_to_fasta, seq_ids):
 
 
 def write_to_fasta(seq_dict, path):
+    """Write a dictionary to a fasta file"""  
     with open(path, 'w') as f:
         for name, seq in seq_dict.items():
             f.write(f'>{name}\n{seq}\n')
+            
+            
+            
+def concat_mult_fastas(dir_with_fastas, write_file=True, path=None, return_dict=False):
+    """Combine multiple fasta files into one dict and write to file.
+    
+        Arguments:
+        dir_with_fastas (str):
+        write_file (bool): if True, write file to input path argument
+        path (str): path to the file to be written
+    """
+    new_dict = {}
+    fps = fu.get_filepaths_in_dir(dir_with_fastas,end_to_exclude='.DS_Store')
+    for path in fps:
+        d = get_seq_dict(path)
+        for key in d.keys():
+            new_dict[key] = d[key]
+    if write_file:
+        write_to_fasta(new_dict, path)
+    if return_dict:
+        return new_dict
             
             
             

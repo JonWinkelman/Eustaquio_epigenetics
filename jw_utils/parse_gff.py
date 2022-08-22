@@ -101,11 +101,9 @@ def write_simple_annot_file(path_to_gff, filepath):
     '''
     write tsv file with protein accession, parent gene, common name and function in each row
     
-    parameters:
-    
+    Arguments:
         path_to_gff (str): path to gff3 annotation file.
-        
-        filename/path (str): name you want to give file with ".txt" extension added. If
+        filepath (str): name you want to give file with ".txt" extension added. If
         path is given, then file will be written to that path, else it will be written in 
         current working directory.
     '''
@@ -123,6 +121,13 @@ def write_simple_annot_file(path_to_gff, filepath):
             
             
 def make_simple_annot_df(path_to_gff, start_end = False):
+    """
+    Return df derived from gff file.
+    
+    Arguments:
+    path_to_gff (str): path to gff File
+    start_end (bool): If True, adds gene start, end, and strand columns to df
+    """
     jb_bug = make_seq_object_dict(path_to_gff, feature_type='CDS')
     jb_bug_gene = make_seq_object_dict(path_to_gff, feature_type='gene')
     genes = []

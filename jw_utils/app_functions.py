@@ -10,6 +10,7 @@ from jw_utils import file_utils as fu
 from jw_utils import genome_utils as gu
 from jw_utils import parse_gff as pgf
 from jw_utils import ribo_profile3 as rp
+from jw_utils import parse_gbk as pgb
 import os
 import pandas as pd
 import numpy as np
@@ -206,19 +207,46 @@ class rb_obj_store:
         return rp_obj_dict
 
 
-def get_trimmed_df(feature_ID, upstream, downstream, path_to_gff):
-    'get df with the given # of up and downstream genes'
-    df = pgf.make_simple_annot_df(path_to_gff, start_end=True).sort_values('start')
-    df = df.set_index('protein_ID')
+def get_trimmed_df(feature_ID, upstream, downstream, path_to_annot_file,
+                     annot_type = 'gbk', contig_name=None):
+    'get annotation df with the given # of up and downstream genes'
+    if annot_type=='gbk':
+        df = pgb.make_simple_annot_df(path_to_annot_file, contig_name, start_end=True).sort_values('start')
+    else:
+        df = pgf.make_simple_annot_df(path_to_annot_file, start_end=True).sort_values('start')
+    
+    #df = df.set_index('protein_ID')
     index = df.index.get_loc(feature_ID)
+    if index-upstream<=0:
+        upstream = index
+    max_index = df.index.get_loc(df.index.max())
+    if index+downstream>=max_index:
+        downstream = max_index-index
     trimmed_df = df.iloc[index-upstream:(index+downstream)+1,:]
     return trimmed_df
 
 
-def get_offsets(feature_id, up_input, down_input, path_to_gff):
-    trimmed_df = get_trimmed_df(feature_id, up_input, down_input, path_to_gff)
-    s = trimmed_df.iloc[0,2] # start of first upstream gene
-    e = trimmed_df.iloc[-1,3] # end of last downstream gene
+def get_offsets(feature_id, up_input, down_input, path_to_annot_file,
+                 annot_type = 'gbk', contig_name=None):
+    trimmed_df = get_trimmed_df(feature_id, up_input, down_input,
+                         path_to_annot_file, annot_type=annot_type, 
+                         contig_name=contig_name)
+    """
+    Return the nt positions of start and end of region, as well as the trimmed df.
+    
+    Arguments:
+    feature_id (str): ID of feature, needs to match the index of the trimmed_df. If using 
+                      genbank annotation files, I think should use locus tags for feature IDs. 
+    up_input (int): number of genes to calculate offsets for  upstream of the feature
+    down_input (int): number of genes to calculate offsets for downstream of the feature
+    path_to_annot_file (str): 
+    annot_type (str): default='gbk', can also be gff, not tested here
+    contig_name (str): default=None, name of contig, chromosome, plasmid...
+    
+    """
+
+    s = trimmed_df.loc[trimmed_df.index.min(),'start'] # start of first upstream gene
+    e = trimmed_df.loc[trimmed_df.index.max(),'end'] # end of last downstream gene
     feature_start = trimmed_df.loc[feature_id,'start']
     feature_end = trimmed_df.loc[feature_id,'end']
     feature_phase = trimmed_df.loc[feature_id,'strand']

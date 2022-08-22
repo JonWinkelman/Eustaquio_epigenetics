@@ -46,16 +46,40 @@ def plot_bar_with_outliers(series, name, end):
     return trace
 
 
-def quick_scatter(x,y):
+def quick_scatter(x,y, mode = 'markers'):
     fig = go.Figure()
     fig.add_trace( go.Scatter(x = x,
                 y = y,
-                mode = 'markers'
+                mode = mode
+                         ))
+    pyo.plot(fig)
+    
+
+def quick_line(x,y, mode = 'lines'):
+    fig = go.Figure()
+    fig.add_trace( go.Scatter(x = x,
+                y = y,
+                mode = mode
                          ))
     pyo.plot(fig)
     
     
+def quick_bar(x,y):
+    fig = go.Figure()
+    fig.add_trace( go.Bar(x = x,
+                y = y,
+                         ))
+    pyo.plot(fig)
+
+   
 def make_gene_arrow_coords(start_codon, stop_codon, height = 1,vert_shift = 0):
+    """
+    Return x and y arrays for arrow for gene
+    Parameters:
+    start_codon (int): genomic position of start codon
+    stop_codon (int): genomic position of stop codon
+    return (tuple of two lists)
+    """
     if start_codon<stop_codon:
         strand = '+'
         br = stop_codon - (stop_codon - start_codon)/10
