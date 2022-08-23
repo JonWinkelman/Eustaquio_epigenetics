@@ -46,31 +46,35 @@ def plot_bar_with_outliers(series, name, end):
     return trace
 
 
-def quick_scatter(x,y, mode = 'markers'):
+def quick_scatter(x,y, mode = 'markers', plot=True):
     fig = go.Figure()
     fig.add_trace( go.Scatter(x = x,
                 y = y,
                 mode = mode
                          ))
-    pyo.plot(fig)
-    
+    if plot:
+        pyo.plot(fig)
+    return fig
 
-def quick_line(x,y, mode = 'lines'):
+def quick_line(x,y, mode = 'lines', plot=True):
     fig = go.Figure()
     fig.add_trace( go.Scatter(x = x,
                 y = y,
                 mode = mode
                          ))
-    pyo.plot(fig)
+    if plot:
+        pyo.plot(fig)
+    return fig
     
     
-def quick_bar(x,y):
+def quick_bar(x,y, plot=True):
     fig = go.Figure()
     fig.add_trace( go.Bar(x = x,
                 y = y,
                          ))
-    pyo.plot(fig)
-
+    if plot:
+        pyo.plot(fig)
+    return fig
    
 def make_gene_arrow_coords(start_codon, stop_codon, height = 1,vert_shift = 0):
     """

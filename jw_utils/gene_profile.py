@@ -5,6 +5,7 @@ Created on Wed Aug  3 09:29:33 2022
 
 @author: jonwinkelman
 """
+from operator import length_hint
 import pandas as pd
 import bisect
 from plotly import offline as pyo
@@ -49,8 +50,11 @@ class GeneProfile:
             self.contig_name = path_to_value_counts.split('/')[-1].split('_')[0]
         else:
             self.value_counts = val_counts_df
-        if contig_name:
-            self.contig_name = contig_name
+        if type(val_counts_df) == pd.core.frame.DataFrame:
+            if not contig_name:
+                raise Exception('Need value for the argument "contig_name"')
+            else:
+                self.contig_name = contig_name
         self.path_to_value_counts = path_to_value_counts
         self.path_to_annot_file = path_to_annot_file
         self.geneObject_dict = self.build_genbank_dict()[self.contig_name]
@@ -274,7 +278,13 @@ class TssFinder(GeneProfile):
     """Class to find transcription start sites."""
     
     def get_tss_windows(self, window_size=100):
-        """Return dictionary with coordinate windows likely to house the tss."""
+        """Return dictionary with genome coordinates for windows likely to house the tss.
+        Arguments:
+            window_size (int): number of nucleotides before start codon to consider for tss
+        Return: dict structure: {feature_id:beginning,end} beginning and end is always relative
+                        to the top strand of the genome, e.g the beginning still is a 
+                        smaller number than end even on '-' strand.
+        """
         windows = {}
         #get tss window for genes on the plus strand
         for i, gene in enumerate(self.plus_strand_genes):
@@ -333,23 +343,29 @@ class TssFinder(GeneProfile):
  
     
  
-    def fill_df(self):
-        df = self.value_counts
-        return df.reindex(range(1,df.index.max()),fill_value=0)
+    def fill_df(self, max_val=None):
+        df=self.value_counts
+        if not max_val:
+            max_val = self.genome_size
+        return df.reindex(range(1,max_val),fill_value=0)
  
  
     def get_region_hits(self, window_size=100):
+        """Return a dict of window dfs for gene 5' tss window with the reads at each position"""
         windows = self.get_tss_windows(window_size=window_size)
+        df = self.fill_df()
         gene_windows = {}
         for feature in windows.keys():
             feat_window_coords = windows[feature]
             if feat_window_coords:
-                li = bisect.bisect_left(self.value_counts.index, feat_window_coords[0])
-                ri = bisect.bisect_right(self.value_counts.index, feat_window_coords[1])
+                #li = bisect.bisect_left(self.value_counts.index, feat_window_coords[0])
+                #ri = bisect.bisect_right(self.value_counts.index, feat_window_coords[1])
                 if self.geneObject_dict[feature].strand==1:
-                    gene_windows[feature] = self.value_counts.iloc[li:ri,0]
+                    gene_windows[feature] = df.loc[feat_window_coords[0]:feat_window_coords[1],df.columns[0]]
+                    #gene_windows[feature] = self.value_counts.iloc[li:ri,0]
                 else:
-                    gene_windows[feature] = self.value_counts.iloc[li:ri,1]
+                    gene_windows[feature] = df.loc[feat_window_coords[0]:feat_window_coords[1],df.columns[1]]
+                    #gene_windows[feature] = self.value_counts.iloc[li:ri,1]
         return gene_windows
     
     def smooth_df(self, kernal_type, kernal_length):
@@ -404,11 +420,27 @@ def gausian_diff_kernal(length, sigma, plot=False):
     if length%2==0:
         raise Exception('The kernal length must be an odd number')
     x = get_zero_centered_range(length)  
-    gaussian_kernal = gauss_1d_kernal(length, sigma=1, plot=False)
+    gaussian_kernal = gauss_1d_kernal(length, sigma=sigma, plot=False)
     diff_kernal = [-1,0,1]
     gausian_diff_kernal = np.convolve(gaussian_kernal, diff_kernal, mode = 'full')
     x = get_zero_centered_range(len(gausian_diff_kernal))
     if plot:
         pu.quick_scatter(x, gausian_diff_kernal)
     return gausian_diff_kernal
+
+
+
+def make_fig_dict(kernal_type='gauss_diff', length=7, sigma=1)
+    df_dict = {}
+    fig_dict = {}
+    kernal = [1,0,-1]
+    if kernal_type = 'gauss_diff'
+        kernal = gpro.gausian_diff_kernal(length=length, sigma=sigma, plot=True)
+    for gene in tss_win_dict.keys():
+        df_dict[gene] = ndi.correlate(tss_win_dict[gene],kernal, mode='reflect')
+        fig = pu.quick_line(x = tss_win_dict[gene].index, y = df_dict[gene], plot=False)
+        af = pu.quick_bar(x= tss_win_dict[gene].index, y =tss_win_dict[gene], plot=False)['data'][0]
+        fig.add_trace(af)
+        fig_dict[gene] = fig
+    return fig_dict
 
