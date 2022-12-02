@@ -30,7 +30,6 @@ def plot_bar_with_outliers(series, name, end):
         hist = np.histogram(series, bins=list(range(start, end+binsize, binsize)) + [largest_value])
     else:
         hist = np.histogram(series, bins=list(range(start, end+binsize, binsize)) + [end+binsize])
-
     # Adding labels to the chart
     labels = []
     for i, j in zip(hist[1][0::1], hist[1][1::1]):
@@ -38,7 +37,6 @@ def plot_bar_with_outliers(series, name, end):
             labels.append('{}-{}'.format(i, j))
         else:
             labels.append('>{}'.format(i))
-
     # Plotting the graph
     trace = go.Bar(x=labels,
                    y=hist[0])
@@ -46,31 +44,35 @@ def plot_bar_with_outliers(series, name, end):
     return trace
 
 
-def quick_scatter(x,y, mode = 'markers', plot=True):
+def quick_scatter(x,y, mode = 'markers', plot=True, name=None):
     fig = go.Figure()
     fig.add_trace( go.Scatter(x = x,
                 y = y,
-                mode = mode
+                mode = mode,
+                name = name
                          ))
     if plot:
         pyo.plot(fig)
     return fig
 
-def quick_line(x,y, mode = 'lines', plot=True):
+def quick_line(x,y, mode = 'lines', plot=True, name=None):
     fig = go.Figure()
     fig.add_trace( go.Scatter(x = x,
                 y = y,
-                mode = mode
+                mode = mode,
+                name = name
                          ))
     if plot:
         pyo.plot(fig)
     return fig
     
     
-def quick_bar(x,y, plot=True):
+def quick_bar(x,y, plot=True, name=None):
     fig = go.Figure()
-    fig.add_trace( go.Bar(x = x,
-                y = y,
+    fig.add_trace(go.Bar(
+                    x = x,
+                    y = y,
+                    name = name
                          ))
     if plot:
         pyo.plot(fig)

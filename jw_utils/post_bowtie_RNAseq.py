@@ -39,6 +39,7 @@ def get_bam_pairs(fpath_to_bam, contig=None):
 
 
 def get_flag_dist(path_to_bam):
+    "get the distribution of sam flags"
     flag_vals = range(0,1000)
     flag_d = {flag:0 for flag in flag_vals}
     samfile = pysam.AlignmentFile(path_to_bam, 'rb')  # BAM file reader.

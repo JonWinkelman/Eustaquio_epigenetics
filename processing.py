@@ -11,6 +11,7 @@ from plotly import offline as pyo
 from plotly import graph_objects as go
 import numpy as np
 import os
+from scipy import ndimage as ndi
 from jw_utils import app_functions as afns
 from jw_utils import parse_gff as pgf
 from jw_utils import parse_fasta as pf
@@ -232,6 +233,33 @@ def graph_gene_region(df, feature_id, up_input, down_input,paths_to_valcnts_lst,
                        )
     return fig
 
+
+
+def make_fig_dict(path_to_annot_file, contig_name, kernal_type='gauss_diff', 
+                length=7, sigma=1, plot_kernal=False, read_density_cut= 0):
+    """make a dict with holding plotly figs of tss window reads raw and filtered
+    
+    kernal types:'diff', 'gauss_diff'
+    """
+    df_dict = {}
+    fig_dict = {}
+    kernal = [1,0,-1]
+    if kernal_type == 'gauss_diff':
+        kernal = gpro.gausian_diff_kernal(length=length, sigma=sigma, plot=plot_kernal)
+    if kernal_type == 'diff':
+        kernal = [-1,0,1]
+    
+    df = get_read_sums(path_to_valcount_dir,contig_name)
+    tf_sums = gpro.TssFinder(path_to_annot_file, val_counts_df=df, contig_name=contig_name)
+    tss_win_dict = tf_sums.get_region_hits(read_density_cut=read_density_cut)
+    for gene in tss_win_dict.keys():
+        df_dict[gene] = ndi.correlate(tss_win_dict[gene],kernal, mode='reflect')
+        fig = pu.quick_bar(x= tss_win_dict[gene].index, y =tss_win_dict[gene], plot=False)
+        if kernal_type:
+            af = pu.quick_line(x = tss_win_dict[gene].index, y = df_dict[gene], plot=False)['data'][0]
+            fig.add_trace(af)
+        fig_dict[gene] = fig
+    return fig_dict
 
 
 

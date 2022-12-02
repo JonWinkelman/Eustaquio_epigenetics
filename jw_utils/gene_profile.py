@@ -350,22 +350,26 @@ class TssFinder(GeneProfile):
         return df.reindex(range(1,max_val),fill_value=0)
  
  
-    def get_region_hits(self, window_size=100):
+    def get_region_hits(self, window_size=100, read_density_cut=0):
         """Return a dict of window dfs for gene 5' tss window with the reads at each position"""
         windows = self.get_tss_windows(window_size=window_size)
+        dens_dict = self.get_window_read_density(window_size=window_size)
+
+
         df = self.fill_df()
         gene_windows = {}
         for feature in windows.keys():
-            feat_window_coords = windows[feature]
-            if feat_window_coords:
-                #li = bisect.bisect_left(self.value_counts.index, feat_window_coords[0])
-                #ri = bisect.bisect_right(self.value_counts.index, feat_window_coords[1])
-                if self.geneObject_dict[feature].strand==1:
-                    gene_windows[feature] = df.loc[feat_window_coords[0]:feat_window_coords[1],df.columns[0]]
-                    #gene_windows[feature] = self.value_counts.iloc[li:ri,0]
-                else:
-                    gene_windows[feature] = df.loc[feat_window_coords[0]:feat_window_coords[1],df.columns[1]]
-                    #gene_windows[feature] = self.value_counts.iloc[li:ri,1]
+            if dens_dict[feature] and dens_dict[feature] >= read_density_cut:
+                feat_window_coords = windows[feature]
+                if feat_window_coords:
+                    #li = bisect.bisect_left(self.value_counts.index, feat_window_coords[0])
+                    #ri = bisect.bisect_right(self.value_counts.index, feat_window_coords[1])
+                    if self.geneObject_dict[feature].strand==1:
+                        gene_windows[feature] = df.loc[feat_window_coords[0]:feat_window_coords[1],df.columns[0]]
+                        #gene_windows[feature] = self.value_counts.iloc[li:ri,0]
+                    else:
+                        gene_windows[feature] = df.loc[feat_window_coords[0]:feat_window_coords[1],df.columns[1]]
+                        #gene_windows[feature] = self.value_counts.iloc[li:ri,1]
         return gene_windows
     
     def smooth_df(self, kernal_type, kernal_length):
@@ -430,17 +434,5 @@ def gausian_diff_kernal(length, sigma, plot=False):
 
 
 
-def make_fig_dict(kernal_type='gauss_diff', length=7, sigma=1)
-    df_dict = {}
-    fig_dict = {}
-    kernal = [1,0,-1]
-    if kernal_type = 'gauss_diff'
-        kernal = gpro.gausian_diff_kernal(length=length, sigma=sigma, plot=True)
-    for gene in tss_win_dict.keys():
-        df_dict[gene] = ndi.correlate(tss_win_dict[gene],kernal, mode='reflect')
-        fig = pu.quick_line(x = tss_win_dict[gene].index, y = df_dict[gene], plot=False)
-        af = pu.quick_bar(x= tss_win_dict[gene].index, y =tss_win_dict[gene], plot=False)['data'][0]
-        fig.add_trace(af)
-        fig_dict[gene] = fig
-    return fig_dict
+
 

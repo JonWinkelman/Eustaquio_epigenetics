@@ -7,7 +7,6 @@ Created on Fri Jun 24 14:08:25 2022
 
 """
 from jw_utils import file_utils as fu
-path_to_fasta = '/Users/jonwinkelman/my_dash_app/data/Proteomes/GCF_009939195.1.faa'
 
 def get_seq_dict(path_to_fasta):
     '''
@@ -96,6 +95,26 @@ def fasta_to_phyl(fasta_aln_path, output_path):
             
             
         
-        
+def get_seq_region(path_to_fasta, feature_name, start_coord, end_coord):
+    """Return the sequence within given fasta element from the given coordinates.
+
+    Arguments:
+        feature name (str): protein, gene, contig ID, genome etc... (the thing after the '<')
+        start_coord (int): beginning of sequence (DNA or protein)
+        end_coord (int): end of sequence, DNA or protein
+        *start and end coordinates are 1-based. 1 = first element, 
+        1,3 will return the first-third elements of the sequences
+    """
+    fasta_dict = get_seq_dict(path_to_fasta)
+    feature = fasta_dict.get(feature_name)
+    if not feature:
+        raise Exception('Feature name not in fasta dictionary')
+    else:
+        if start_coord <1:
+            raise Exception('This is 1-based. Start coordinate must be >=1')
+        if end_coord > len(feature):
+            raise Exception(f'end coordinate is > length {len(feature)} of {feature_name}')
+        start_coord = start_coord-1 # to make 1-based
+        return feature[start_coord:end_coord] 
         
             

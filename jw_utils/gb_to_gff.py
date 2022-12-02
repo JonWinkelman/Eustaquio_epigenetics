@@ -26,7 +26,7 @@ def gb_to_gff(path_to_genbank, out_path):
                 else: strand ='+'
                 fq = f.qualifiers
                 if not f.type=='source':
-                    fp.write(f'{contig.id}\tUnknown\t{f.type}\t{int(l.start)}\t{int(l.end)}\t.\t{strand}\t.\t')
+                    fp.write(f'{contig.id}\tUnknown\t{f.type}\t{int(l.start)+1}\t{int(l.end)}\t.\t{strand}\t.\t')
                 if f.type == 'CDS':
                     pid = fq.get("protein_id")
                     if pid: pid = pid[0]
