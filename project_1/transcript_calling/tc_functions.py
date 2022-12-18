@@ -2,6 +2,8 @@ import pandas as pd
 import pysam
 import bisect
 from jw_utils import parse_gff as pgf
+from jw_utils import genome_utils as gu
+
 from datetime import date
 
 def make_coverage_df(path_to_transcript_annots):
@@ -289,3 +291,132 @@ def write_gff_from_seqobj(trans_obj_dict, new_gtf_filepath):
             for line in df.index:
                 f.write(line)
 
+
+
+def get_seq_around_coordinate(fasta_genome_dict, contig, strand,
+                              coordinate, upstream,downstream, printout=False):
+    """Return sequence upstream and downstream of given coordinate.
+    
+    This function returns sequence on the strand indicated. E.g. if '-' strand, then returns the 
+    bottom strand sequence 5' to 3' as indicated in drawing above.
+    
+    Parameters:
+    strand (str): '+' or '-', indicates the strand of DNA that is being referenced.
+    coordinate (int): This is 0-based indexing. Is the reference for upstream and downstream.
+    upstream (int): number of nts upstream of coordinate, does not include the coordinate.
+    downstream (int):number of nts downstream of coordinate, includes coordinate.
+    """
+    if strand == '+':
+        upstream = coordinate-upstream
+        downstream = coordinate+downstream
+        if upstream < 0:
+            upstream=0
+            print(f'Could not return all of upstream sequence requested because reached beginning of contig.') 
+        if downstream > len(fasta_genome_dict[contig]):
+            print(f'Could not return all of downstream sequence requested because reached end of contig.') 
+            downstream = len(fasta_genome_dict[contig])
+        seq=fasta_genome_dict[contig][upstream:downstream]
+        if printout:
+            print(f'The length of sequence returned is {len(seq)} nt.')
+            ref_coord = fasta_genome_dict[contig][coordinate]
+            print(f'The ref coordinate nt is {ref_coord}.')
+        return seq
+    if strand == '-':
+        upstream = (coordinate+upstream)+1
+        downstream = (coordinate-downstream)+1
+        if downstream < 0:
+            downstream=0
+            #print(f'Could not return all of downstream sequence requested because reached beginning of contig.') 
+        if upstream > len(fasta_genome_dict[contig]):
+            #print(f'Could not return all of upstream sequence requested because reached end of contig.') 
+            upstream = len(fasta_genome_dict[contig])
+        top_strand_seq = fasta_genome_dict[contig][downstream:upstream]
+        seq = gu.rev_comp(top_strand_seq)
+        if printout:
+            print(f'The length of sequence returned is {len(seq)} nt.')
+            ref_coord = gu.rev_comp(fasta_genome_dict[contig][coordinate])
+            print(f'The ref coordinate nt is {ref_coord}.')
+        return seq
+
+
+
+
+
+def make_contig_nested_dict(path_to_gff, feature_type):
+    obj_dict = pgf.make_seq_object_dict(path_to_gff, feature_type)
+    cont_cobj_dict = {cont:{} for cont in pgf.get_contig_names(path_to_gff)}
+    for obj in obj_dict.values():
+       cont_cobj_dict[obj.chromosome][obj.ID] = obj
+    return cont_cobj_dict 
+    
+
+def get_strandContigDf_dict(annots_path, feature_type):
+    """returns dict {strand:{contig:df}} where the df contains features on that strand and contig"""
+    trans_annot_objs = make_contig_nested_dict(annots_path,
+                                                   feature_type=feature_type)
+    begin = []
+    end = []
+    strand = []
+    chroms = []
+    feat_id = []
+    for contig in trans_annot_objs:
+        for trnspt_obj in trans_annot_objs[contig].values():
+            chroms.append(contig)
+            s = trnspt_obj.strand
+            begin.append(trnspt_obj.start)
+            end.append(trnspt_obj.end)
+            strand.append(s)
+            feat_id.append(trnspt_obj.ID)
+    trans_df = pd.DataFrame()
+    trans_df["ID"] = feat_id
+    trans_df["chromosome"] = chroms
+    trans_df["begin"] = begin
+    trans_df["end"] = end
+    trans_df["strand"] = strand
+    contigs = pgf.get_contig_names(annots_path)
+    strands = ['+','-']
+    d = {s:{} for s in strands}
+    for s in strands:
+        for contig in contigs:
+            df = trans_df.groupby('chromosome').get_group(contig)
+            df = df.groupby('strand').get_group(s)
+            d[s][contig] = df
+    return d
+
+
+
+
+
+def find_genes_in_transcript(path_trans_annots, path_to_gene_annots):
+    """"""
+    
+    gene_annot_objs = get_strandContigDf_dict(path_to_gene_annots,feature_type='gene')
+    d_dfs_trnascripts = get_strandContigDf_dict(path_trans_annots,feature_type='transcript')
+    trans_objs = pgf.make_seq_object_dict(path_trans_annots, feature_type='transcript')
+    genes_in_transcript = {t:[] for t in trans_objs}
+    for contig in gene_annot_objs['+']:
+        df = gene_annot_objs['+'][contig].sort_values('begin').reset_index()
+        df_tran = d_dfs_trnascripts['+'][contig].sort_values('begin').reset_index()
+        #is the start of the gene within the transcript? if so, add to list
+        for ind in df.index:
+            gene = df.loc[ind, :]
+            #which transcript start site does this gene begin after
+            index_insert = bisect.bisect_right(df_tran.loc[:,'begin'],gene.begin)-1
+            nearest_transcript = df_tran.iloc[index_insert,:]
+            if gene.begin>=nearest_transcript.begin and gene.begin<= nearest_transcript.end:
+                genes_in_transcript[nearest_transcript.ID].append(gene.ID)
+    for contig in gene_annot_objs['-']:
+        df = gene_annot_objs['-'][contig].sort_values('begin').reset_index()
+        df_tran = d_dfs_trnascripts['-'][contig].sort_values('begin').reset_index()
+        #is the start of the gene within the transcript? if so, add to list
+        # if '- strand, then start of the gene is end...'
+        for ind in df.index:
+            gene = df.loc[ind, :]
+            #which transcript start site does this gene begin before
+            index_insert = bisect.bisect_right(df_tran.loc[:,'begin'],gene.end)-1
+            nearest_transcript = df_tran.iloc[index_insert,:]
+            if gene.end>=nearest_transcript.begin and gene.end <= nearest_transcript.end:
+                genes_in_transcript[nearest_transcript.ID].append(gene.ID)
+        
+    return genes_in_transcript
+        

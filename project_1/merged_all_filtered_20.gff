@@ -1,4 +1,4 @@
-#stringtie output filtered and edited with filter_stringtie_results.ipynb on 2022-12-14
+#stringtie output filtered and edited with filter_stringtie_results.ipynb on 2022-12-17
 BF000000.2	TrestleBio	transcript	557	2919	.	-	.	ID=STRG.2481;transcript_id=STRG.2481;cov=34.033009;FPKM=11.290632;TPM=6.038183
 BF000000.2	TrestleBio	transcript	7002	9676	.	+	.	ID=STRG.181;transcript_id=STRG.181;cov=45.908794;FPKM=10.563829;TPM=5.029736
 BF000000.2	TrestleBio	transcript	20352	21053	.	+	.	ID=STRG.183;transcript_id=STRG.183;cov=23.421488;FPKM=5.389394;TPM=2.566042
