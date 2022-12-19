@@ -283,7 +283,7 @@ def write_gff_from_seqobj(trans_obj_dict, new_gtf_filepath):
             FPKM = transcpt_obj.FPKM
             TPM = transcpt_obj.TPM
             ln=f'{contig}\tTrestleBio\t{ft}\t{s}\t{e}\t{sc}\t{st}\t{p}\t'
-            attr = f'ID={ID};transcript_id={TI};cov={cv};FPKM={FPKM};TPM={TPM}'
+            attr = f'ID={ID};transcript_id={TI};cov={cv};FPKM={FPKM};TPM={TPM.strip()}'
             lines[s] = ln+attr+'\n'
         df = pd.DataFrame(lines.keys(), lines.values())
         df = df.sort_values(df.columns[0])
